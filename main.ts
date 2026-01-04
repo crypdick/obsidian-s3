@@ -5,7 +5,6 @@ import { mimeType } from 'src/settings';
 import { S3Client } from 'src/s3Client';
 import prettyBytes from 'pretty-bytes';
 import { buf2hex, generateResourceName, getS3Path, getS3URLs } from 'src/helper';
-import { ConvertAttachmentsModal } from 'src/convertAttachmentsModal';
 
 
 function allFilesAreValidUploads(files: FileList) {
@@ -77,50 +76,6 @@ export default class ObsidianS3 extends Plugin {
 
 		this.setupHandlers();
 		if (this.tryStartService()) {
-			this.addCommand({
-				id: 's3-convert-existing-attachments',
-				name: 'Upload existing attachments to S3 and rewrite links…',
-				callback: () => new ConvertAttachmentsModal(this.app, this, {
-					scope: 'current-note',
-					dryRun: true,
-					makeBackup: true,
-					linkMode: settings.linkMode ?? 'proxy',
-				}).open(),
-			});
-
-			this.addCommand({
-				id: 's3-convert-attachments-current-note',
-				name: 'Convert attachments in current note',
-				callback: () => new ConvertAttachmentsModal(this.app, this, {
-					scope: 'current-note',
-					dryRun: true,
-					makeBackup: true,
-					linkMode: settings.linkMode ?? 'proxy',
-				}).open(),
-			});
-
-			this.addCommand({
-				id: 's3-convert-attachments-current-folder',
-				name: 'Convert attachments in current folder',
-				callback: () => new ConvertAttachmentsModal(this.app, this, {
-					scope: 'current-folder',
-					dryRun: true,
-					makeBackup: true,
-					linkMode: settings.linkMode ?? 'proxy',
-				}).open(),
-			});
-
-			this.addCommand({
-				id: 's3-convert-attachments-entire-vault',
-				name: 'Convert attachments in entire vault',
-				callback: () => new ConvertAttachmentsModal(this.app, this, {
-					scope: 'entire-vault',
-					dryRun: true,
-					makeBackup: true,
-					linkMode: settings.linkMode ?? 'proxy',
-				}).open(),
-			});
-
 			this.addCommand({
 				id: 's3-clear-unused',
 				name: 'Clear unused s3 objects.',
@@ -196,9 +151,10 @@ export default class ObsidianS3 extends Plugin {
 
 	tryStartService(): boolean {
 		if (isValidSettings(settings)) {
-			new Notice(`Creating S3 Clients`);
+			new Notice(`Initializing S3 clients`);
 			server = new S3Server(createClients(settings.clients), settings.port);
 			if (settings.enableLocalServer ?? true) {
+				new Notice(`Starting local proxy server on port ${settings.port}`);
 				server.listen();
 			} else {
 				new Notice('S3: Local proxy server is disabled. Existing localhost links will not work until it is enabled.');
