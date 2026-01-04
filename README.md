@@ -5,7 +5,9 @@ An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media at
 
 When you copy-paste an image, video, audio, or document into your note, this plugin will upload it to your S3 bucket and rewrite the link to the uploaded file. It also supports uploading existing attachments to S3 and rewriting the links in your notes.
 
-This repository is a **fork** of [`ttax00/obsidian-s3`](https://github.com/ttax00/obsidian-s3). Huge thanks to the original author(s) for the foundation.
+![](assets/demo.gif)
+
+This is a maintained fork of [`ttax00/obsidian-s3`](https://github.com/ttax00/obsidian-s3). Huge thanks to the original author(s) for the foundation.
 
 This fork includes significant additions and behavior changes, including:
 - Public URL link mode (embed `https://...` links instead of `http://localhost:...`)
@@ -13,7 +15,6 @@ This fork includes significant additions and behavior changes, including:
 - Safer “clear unused” behavior across multiple clients
 - A conversion tool to upload existing local attachments to S3 and rewrite links.
 
-![](assets/welcome.gif)
 
 
 ## Manually installing the plugin
@@ -118,8 +119,8 @@ You can customize this list in the plugin settings under **Allowed MIME Types**.
 
 ## Many thanks
 Inspiration taken from:
-- [ttax00/obsidian-s3](https://github.com/ttax00/obsidian-s3)
-- [obsidian-paste-png-to-jpeg](https://github.com/musug/obsidian-paste-png-to-jpeg)
-- [Obsidian Imgur Plugin](https://github.com/gavvvr/obsidian-imgur-plugin)
-- [Obsidian Static File Server](https://github.com/elias-sundqvist/obsidian-static-file-server)
+- [`ttax00/obsidian-s3`](https://github.com/ttax00/obsidian-s3)
+- [`musug/obsidian-paste-png-to-jpeg`](https://github.com/musug/obsidian-paste-png-to-jpeg)
+- [`gavvvr/obsidian-imgur-plugin`](https://github.com/gavvvr/obsidian-imgur-plugin)
+- [`elias-sundqvist/obsidian-static-file-server`](https://github.com/elias-sundqvist/obsidian-static-file-server)
 
