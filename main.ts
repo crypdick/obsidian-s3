@@ -5,6 +5,7 @@ import { mimeType } from 'src/settings';
 import { S3Client } from 'src/s3Client';
 import prettyBytes from 'pretty-bytes';
 import { buf2hex, generateResourceName, getS3Path, getS3URLs } from 'src/helper';
+import { ConvertAttachmentsModal } from 'src/convertAttachmentsModal';
 
 
 function allFilesAreValidUploads(files: FileList) {
@@ -76,6 +77,50 @@ export default class ObsidianS3 extends Plugin {
 
 		this.setupHandlers();
 		if (this.tryStartService()) {
+			this.addCommand({
+				id: 's3-convert-existing-attachments',
+				name: 'Upload existing attachments to S3 and rewrite links…',
+				callback: () => new ConvertAttachmentsModal(this.app, this, {
+					scope: 'current-note',
+					dryRun: true,
+					makeBackup: true,
+					linkMode: settings.linkMode ?? 'proxy',
+				}).open(),
+			});
+
+			this.addCommand({
+				id: 's3-convert-attachments-current-note',
+				name: 'Convert attachments in current note',
+				callback: () => new ConvertAttachmentsModal(this.app, this, {
+					scope: 'current-note',
+					dryRun: true,
+					makeBackup: true,
+					linkMode: settings.linkMode ?? 'proxy',
+				}).open(),
+			});
+
+			this.addCommand({
+				id: 's3-convert-attachments-current-folder',
+				name: 'Convert attachments in current folder',
+				callback: () => new ConvertAttachmentsModal(this.app, this, {
+					scope: 'current-folder',
+					dryRun: true,
+					makeBackup: true,
+					linkMode: settings.linkMode ?? 'proxy',
+				}).open(),
+			});
+
+			this.addCommand({
+				id: 's3-convert-attachments-entire-vault',
+				name: 'Convert attachments in entire vault',
+				callback: () => new ConvertAttachmentsModal(this.app, this, {
+					scope: 'entire-vault',
+					dryRun: true,
+					makeBackup: true,
+					linkMode: settings.linkMode ?? 'proxy',
+				}).open(),
+			});
+
 			this.addCommand({
 				id: 's3-clear-unused',
 				name: 'Clear unused s3 objects.',

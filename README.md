@@ -100,7 +100,7 @@ Supported files (limited by files allowed to be linked by Obsidian):
 - [ ] Rename links on port/foldername changes.
 
 ### Unplanned
-- [ ] Command: upload existing compatible attachments.
+- [x] Command: upload existing compatible attachments + rewrite links.
 - [ ] Parallel uploads. 
 - [ ] Retry counts and delays.
 - [ ] Upload static html sites.

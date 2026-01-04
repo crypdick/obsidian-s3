@@ -59,6 +59,17 @@ export class S3Client {
 			`${this.folderName}/${fileName}`, readable, file.size);
 	}
 
+	public async objectExists(fileName: string): Promise<boolean> {
+		if (!this.client) return false;
+		const objectName = `${this.folderName}/${fileName}`.replace(/^\/+/, '');
+		try {
+			await this.client.statObject(this.bucketName, objectName);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
 	public getObject(path: string, bucketName?: string | null) {
 		return this.client?.getObject(bucketName ?? this.bucketName, path);
 	}
