@@ -70,6 +70,7 @@ export interface IObsidianSetting {
 	activeClient: string;
 	rawMIME: string;
 	linkMode: LinkMode;
+	enableLocalServer: boolean;
 }
 
 export const DEFAULT_CLIENT: S3ClientSettings = {
@@ -87,6 +88,7 @@ export const DEFAULT_SETTINGS: IObsidianSetting = {
 	port: '4998',
 	activeClient: 'default',
 	linkMode: 'proxy',
+	enableLocalServer: true,
 	rawMIME: `
 	img, ico, image/x-icon
 	img, png, image/png
@@ -134,10 +136,22 @@ export class SettingsTab extends PluginSettingTab {
 
 	displayServer(containerEl: HTMLElement) {
 		new Setting(containerEl)
+			.setName('Enable local proxy server')
+			.setDesc('Required if you use Local proxy links (http://localhost:...). Public URL mode does not require it.')
+			.addToggle((t) => {
+				t.setValue(settings.enableLocalServer ?? true)
+					.onChange(async (v) => {
+						settings.enableLocalServer = v;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		new Setting(containerEl)
 			.setName('Server Port (Default: 4998)')
 			.addText(text => text
 				.setPlaceholder(settings.port)
 				.setValue(settings.port ?? DEFAULT_SETTINGS.port)
+				.setDisabled(!(settings.enableLocalServer ?? true))
 				.onChange(async (value) => {
 					settings.port = value.trim() ?? DEFAULT_SETTINGS.port;
 					await this.plugin.saveSettings();
@@ -243,7 +257,7 @@ export class SettingsTab extends PluginSettingTab {
 		containerEl.createEl('h3', { text: 'Misc.' });
 		new Setting(containerEl)
 			.setName('Link mode')
-			.setDesc('How links are written into notes after upload.')
+			.setDesc('How links are written into notes after upload. NOTE: Local proxy links will break unless the local proxy server is enabled and running.')
 			.addDropdown((c) => {
 				c.addOptions({
 					proxy: 'Local proxy (http://localhost:PORT/...)',

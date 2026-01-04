@@ -26,8 +26,8 @@ function allFilesAreValidUploads(files: FileList) {
 }
 
 function isValidSettings(settings: IObsidianSetting) {
-	const { clients, port } = settings;
-	if (isNaN(parseInt(port))) return false;
+	const { clients, port, enableLocalServer } = settings;
+	if ((enableLocalServer ?? true) && isNaN(parseInt(port))) return false;
 	let check = true;
 	for (let i = 0; i < clients.length; i++) {
 		const { accessKey, secretKey, endPoint, bucketName } = clients[i];
@@ -153,7 +153,11 @@ export default class ObsidianS3 extends Plugin {
 		if (isValidSettings(settings)) {
 			new Notice(`Creating S3 Clients`);
 			server = new S3Server(createClients(settings.clients), settings.port);
-			server.listen();
+			if (settings.enableLocalServer ?? true) {
+				server.listen();
+			} else {
+				new Notice('S3: Local proxy server is disabled. Existing localhost links will not work until it is enabled.');
+			}
 			return true;
 		} else {
 			return false;
