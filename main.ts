@@ -106,13 +106,28 @@ export default class ObsidianS3 extends Plugin {
 		const files = vault.getMarkdownFiles();
 
 		new Notice('Indexing resources...');
-		const obsidianUrls = (await getS3URLs(files, vault, server.url)).map((u) => new URL(u));
+		const baseUrls = [
+			server.url,
+			...settings.clients.map((c) => (c.publicBaseUrl ?? '').replace(/\/+$/, '')).filter(Boolean),
+		];
+		const obsidianUrls = (await getS3URLs(files, vault, baseUrls)).map((u) => new URL(u));
 
 		const ids = this.getClientIDs();
 		for (let i = 0; i < ids.length; i++) {
 			const id = ids[i];
 			new Notice(`[${id}] Indexing S3 objects...`);
-			const filter = obsidianUrls.filter((u) => u.searchParams.get("client") === id).map((u) => getS3Path(u));
+			const clientCfg = settings.clients.find((c) => c.id === id);
+			const publicBase = (clientCfg?.publicBaseUrl ?? '').replace(/\/+$/, '');
+			const filter = obsidianUrls
+				.filter((u) => {
+					// Proxy links: identify by client query param
+					const client = u.searchParams.get("client");
+					if (client) return client === id;
+					// Public links: identify by matching base URL
+					if (!publicBase) return false;
+					return u.toString().startsWith(publicBase + '/');
+				})
+				.map((u) => getS3Path(u));
 
 			const s3 = server.getClient(id);
 			const s3Index = await s3.listObjects();
@@ -239,7 +254,16 @@ export default class ObsidianS3 extends Plugin {
 				(prog) => progress = prog,
 				() => window.clearInterval(handle));
 
-			const url = s3.createObjURL(server.url, fileName);
+			let url: string | null = null;
+			if (settings.linkMode === 'public') {
+				url = s3.createPublicURL(fileName, this.getActive().publicBaseUrl);
+				if (!url) {
+					new Notice('S3: Public link mode is enabled but "Public Base URL" is not set. Falling back to local proxy links.');
+				}
+			}
+			if (!url) {
+				url = s3.createObjURL(server.url, fileName);
+			}
 
 			let linkTxt = `![S3 File](${url})`;
 			const method = mimeType.getMethod(file.type);
