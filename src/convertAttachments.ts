@@ -155,6 +155,13 @@ function filterNotesByRules(app: App, notes: TFile[], opts: ConvertAttachmentsOp
 	const excludeTags = (opts.excludeTags ?? []).map(normalizeTag).filter(Boolean) as string[];
 
 	return notes.filter((note) => {
+		// Hard exclude: never scan dot-folders (e.g. .obsidian) regardless of user filters.
+		// This avoids touching Obsidian internals and other hidden metadata.
+		const parts = note.path.split("/");
+		for (let i = 0; i < parts.length - 1; i++) {
+			if (parts[i].startsWith(".")) return false;
+		}
+
 		// Folder filtering
 		if (includeFolders.length) {
 			const ok = includeFolders.some((p) => note.path.startsWith(p));
