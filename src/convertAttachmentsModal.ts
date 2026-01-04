@@ -56,7 +56,7 @@ export class ConvertAttachmentsModal extends Modal {
 			deleteOnlyIfNoExternalRefs: preset?.deleteOnlyIfNoExternalRefs ?? true,
 			includeFolders: preset?.includeFolders ?? [],
 			// Example folders to exclude.
-			excludeFolders: preset?.excludeFolders ?? ["Utility/Logs"],
+			excludeFolders: preset?.excludeFolders ?? ["Utility/Logs", "Private"],
 			includeTags: preset?.includeTags ?? [],
 			// Allow users to tag notes they never want scanned.
 			excludeTags: preset?.excludeTags ?? ["#ignore", "#private"],
