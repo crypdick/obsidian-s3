@@ -52,6 +52,8 @@ export class ConvertAttachmentsModal extends Modal {
 			dryRun: preset?.dryRun ?? true,
 			makeBackup: preset?.makeBackup ?? true,
 			linkMode: preset?.linkMode ?? "proxy",
+			deleteOriginal: preset?.deleteOriginal ?? false,
+			deleteOnlyIfUniqueInScope: preset?.deleteOnlyIfUniqueInScope ?? true,
 		};
 	}
 
@@ -88,6 +90,23 @@ export class ConvertAttachmentsModal extends Modal {
 			.addToggle((t) => {
 				t.setValue(this.opts.makeBackup);
 				t.onChange((v) => (this.opts.makeBackup = v));
+			});
+
+		new Setting(contentEl)
+			.setName("Delete original local attachments")
+			.setDesc("Careful: this can break other notes if they still reference the local file. Only deletes after the remote URL is verified accessible.")
+			.addToggle((t) => {
+				t.setValue(this.opts.deleteOriginal);
+				t.onChange((v) => (this.opts.deleteOriginal = v));
+			});
+
+		new Setting(contentEl)
+			.setName("Only delete if unique in scope")
+			.setDesc("Conservative safety check: only delete a file if it's referenced exactly once within the chosen scope.")
+			.addToggle((t) => {
+				t.setValue(this.opts.deleteOnlyIfUniqueInScope);
+				t.setDisabled(!this.opts.deleteOriginal);
+				t.onChange((v) => (this.opts.deleteOnlyIfUniqueInScope = v));
 			});
 
 		new Setting(contentEl)

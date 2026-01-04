@@ -1,4 +1,4 @@
-import { App, Notice, TFile, Vault } from "obsidian";
+import { App, Notice, TFile, Vault, requestUrl } from "obsidian";
 import ObsidianS3, { server } from "main";
 import { buf2hex, generateResourceName } from "./helper";
 import { mimeType } from "./settings";
@@ -10,6 +10,8 @@ export interface ConvertAttachmentsOptions {
 	dryRun: boolean;
 	makeBackup: boolean;
 	linkMode: "proxy" | "public";
+	deleteOriginal: boolean;
+	deleteOnlyIfUniqueInScope: boolean;
 }
 
 type RefKind = "obsidian-embed" | "obsidian-link" | "md-embed" | "md-link";
@@ -48,6 +50,10 @@ export interface ConvertReport {
 	notesChanged: number;
 	linksRewritten: number;
 	backupCreated: number;
+	attachmentsDeleted: number;
+	deletesSkippedNotUnique: number;
+	deletesSkippedNotVerified: number;
+	deletesFailed: number;
 	errors: string[];
 	previewLines: string[];
 }
@@ -83,6 +89,38 @@ function isAttachmentCandidate(target: string): boolean {
 	// Don't treat markdown notes as attachments
 	if (ext === "md") return false;
 	return mimeType.includeEXT(ext);
+}
+
+async function verifyUrlAccessible(url: string): Promise<boolean> {
+	// Use Obsidian's requestUrl to avoid CORS issues.
+	try {
+		const head = await requestUrl({ url, method: "HEAD", throw: false });
+		if (head.status >= 200 && head.status < 300) return true;
+	} catch {
+		// ignore and fall back to GET
+	}
+	try {
+		const get = await requestUrl({ url, method: "GET", throw: false });
+		return get.status >= 200 && get.status < 300;
+	} catch {
+		return false;
+	}
+}
+
+async function buildUsageCountsInScope(app: App, scopeFiles: TFile[]): Promise<Map<string, number>> {
+	const { vault, metadataCache } = app;
+	const counts = new Map<string, number>();
+	for (const note of scopeFiles) {
+		const content = await vault.read(note);
+		const refs = extractAttachmentRefs(content).filter((r) => isAttachmentCandidate(r.target));
+		for (const ref of refs) {
+			const resolved = metadataCache.getFirstLinkpathDest(ref.target, note.path);
+			if (!resolved || !(resolved instanceof TFile)) continue;
+			if (resolved.extension === "md" || !mimeType.includeEXT(resolved.extension)) continue;
+			counts.set(resolved.path, (counts.get(resolved.path) ?? 0) + 1);
+		}
+	}
+	return counts;
 }
 
 /**
@@ -322,6 +360,10 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 		notesChanged: 0,
 		linksRewritten: 0,
 		backupCreated: 0,
+		attachmentsDeleted: 0,
+		deletesSkippedNotUnique: 0,
+		deletesSkippedNotVerified: 0,
+		deletesFailed: 0,
 		errors: [],
 		previewLines: [],
 	};
@@ -338,9 +380,14 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 	}
 
 	const { vault, metadataCache } = plugin.app;
+	const usageCountByPath = opts.deleteOriginal && opts.deleteOnlyIfUniqueInScope && !opts.dryRun
+		? await buildUsageCountsInScope(plugin.app, scopeFiles)
+		: new Map<string, number>();
 
 	// De-dup uploads across the whole run: vaultPath -> remote url
 	const resolvedUrlByVaultPath = new Map<string, string>();
+	// Files to consider deleting after conversion (deferred to end of run).
+	const deleteCandidates = new Map<string, { file: TFile; url: string }>();
 
 	for (const note of scopeFiles) {
 		report.notesScanned += 1;
@@ -410,6 +457,9 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 				replacements.push({ start: ref.start, end: ref.end, newText });
 				report.linksRewritten += 1;
 				report.previewLines.push(`[REWRITE] ${note.path}: ${ref.raw} -> ${newText}`);
+				if (!opts.dryRun && opts.deleteOriginal) {
+					deleteCandidates.set(resolved.path, { file: resolved, url });
+				}
 			}
 		}
 
@@ -432,10 +482,41 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 		}
 	}
 
+	// Deletions happen at the end so we don't break link resolution for later notes in the same run.
+	if (!opts.dryRun && opts.deleteOriginal) {
+		for (const [path, cand] of deleteCandidates) {
+			if (opts.deleteOnlyIfUniqueInScope) {
+				const n = usageCountByPath.get(path) ?? 0;
+				if (n !== 1) {
+					report.deletesSkippedNotUnique += 1;
+					continue;
+				}
+			}
+
+			const ok = await verifyUrlAccessible(cand.url);
+			if (!ok) {
+				report.deletesSkippedNotVerified += 1;
+				continue;
+			}
+
+			try {
+				await vault.delete(cand.file);
+				report.attachmentsDeleted += 1;
+				report.previewLines.push(`[DELETE] ${path}`);
+			} catch (e) {
+				report.deletesFailed += 1;
+				report.errors.push(`Delete failed for ${path}: ${String(e)}`);
+			}
+		}
+	}
+
 	if (opts.dryRun) {
 		new Notice(`S3 dry-run: scanned ${report.notesScanned} notes, would rewrite ${report.linksRewritten} links.`);
 	} else {
-		new Notice(`S3: scanned ${report.notesScanned} notes, rewrote ${report.linksRewritten} links, uploaded ${report.uploadsSucceeded} files.`);
+		new Notice(
+			`S3: scanned ${report.notesScanned} notes, rewrote ${report.linksRewritten} links, ` +
+			`uploaded ${report.uploadsSucceeded} files, deleted ${report.attachmentsDeleted} local attachments.`
+		);
 	}
 
 	return report;
