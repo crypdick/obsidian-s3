@@ -13,6 +13,14 @@ export interface ConvertAttachmentsOptions {
 	deleteOriginal: boolean;
 	/** Only delete local files that are not referenced by notes outside the chosen scope. */
 	deleteOnlyIfNoExternalRefs: boolean;
+	/** If provided, only scan markdown notes whose path starts with any of these folder prefixes. */
+	includeFolders: string[];
+	/** If provided, skip markdown notes whose path starts with any of these folder prefixes. */
+	excludeFolders: string[];
+	/** If provided, only scan markdown notes that have at least one of these tags. */
+	includeTags: string[];
+	/** If provided, skip markdown notes that have any of these tags. */
+	excludeTags: string[];
 }
 
 type RefKind = "obsidian-embed" | "obsidian-link" | "md-embed" | "md-link";
@@ -38,6 +46,7 @@ interface Replacement {
 }
 
 export interface ConvertReport {
+	notesCandidates: number;
 	notesScanned: number;
 	/** Number of references considered as attachment candidates (i.e., look like files we support). */
 	refsFound: number;
@@ -90,6 +99,87 @@ function isAttachmentCandidate(target: string): boolean {
 	// Don't treat markdown notes as attachments
 	if (ext === "md") return false;
 	return mimeType.includeEXT(ext);
+}
+
+function normalizeFolderPrefix(raw: string): string | null {
+	let s = raw.trim();
+	if (!s) return null;
+	// Vault paths use forward slashes, no leading slash.
+	s = s.replace(/^\/+/, "").replace(/\/+$/, "");
+	if (!s) return null;
+	return s + "/";
+}
+
+function normalizeTag(raw: string): string | null {
+	let t = raw.trim();
+	if (!t) return null;
+	if (!t.startsWith("#")) t = `#${t}`;
+	return t.toLowerCase();
+}
+
+function tagMatches(noteTag: string, filterTag: string): boolean {
+	// Support hierarchical tags: #a/b should match filter #a
+	return noteTag === filterTag || noteTag.startsWith(filterTag + "/");
+}
+
+function getNoteTags(app: App, note: TFile): Set<string> {
+	const cache = app.metadataCache.getFileCache(note);
+	const out = new Set<string>();
+
+	// Inline tags
+	for (const t of cache?.tags ?? []) {
+		const nt = normalizeTag(t.tag);
+		if (nt) out.add(nt);
+	}
+
+	// Frontmatter tags can be string or array
+	const fmTags = cache?.frontmatter?.tags as unknown;
+	if (typeof fmTags === "string") {
+		const nt = normalizeTag(fmTags);
+		if (nt) out.add(nt);
+	} else if (Array.isArray(fmTags)) {
+		for (const v of fmTags) {
+			if (typeof v !== "string") continue;
+			const nt = normalizeTag(v);
+			if (nt) out.add(nt);
+		}
+	}
+
+	return out;
+}
+
+function filterNotesByRules(app: App, notes: TFile[], opts: ConvertAttachmentsOptions): TFile[] {
+	const includeFolders = (opts.includeFolders ?? []).map(normalizeFolderPrefix).filter(Boolean) as string[];
+	const excludeFolders = (opts.excludeFolders ?? []).map(normalizeFolderPrefix).filter(Boolean) as string[];
+	const includeTags = (opts.includeTags ?? []).map(normalizeTag).filter(Boolean) as string[];
+	const excludeTags = (opts.excludeTags ?? []).map(normalizeTag).filter(Boolean) as string[];
+
+	return notes.filter((note) => {
+		// Folder filtering
+		if (includeFolders.length) {
+			const ok = includeFolders.some((p) => note.path.startsWith(p));
+			if (!ok) return false;
+		}
+		if (excludeFolders.length) {
+			const bad = excludeFolders.some((p) => note.path.startsWith(p));
+			if (bad) return false;
+		}
+
+		// Tag filtering
+		if (includeTags.length || excludeTags.length) {
+			const tags = getNoteTags(app, note);
+			if (includeTags.length) {
+				const ok = [...tags].some((t) => includeTags.some((f) => tagMatches(t, f)));
+				if (!ok) return false;
+			}
+			if (excludeTags.length) {
+				const bad = [...tags].some((t) => excludeTags.some((f) => tagMatches(t, f)));
+				if (bad) return false;
+			}
+		}
+
+		return true;
+	});
 }
 
 async function verifyUrlAccessible(url: string): Promise<boolean> {
@@ -353,6 +443,7 @@ async function buildUsageCountsInVault(app: App): Promise<Map<string, number>> {
 
 export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttachmentsOptions): Promise<ConvertReport> {
 	const report: ConvertReport = {
+		notesCandidates: 0,
 		notesScanned: 0,
 		refsFound: 0,
 		refsRemoteSkipped: 0,
@@ -379,7 +470,10 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 	}
 
 	const scopeFiles = getScopeFiles(plugin.app, opts.scope);
-	if (scopeFiles.length === 0) {
+	report.notesCandidates = scopeFiles.length;
+
+	const filteredScopeFiles = filterNotesByRules(plugin.app, scopeFiles, opts);
+	if (filteredScopeFiles.length === 0) {
 		new Notice("S3: No notes found for the chosen scope.");
 		return report;
 	}
@@ -387,7 +481,7 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 	const { vault, metadataCache } = plugin.app;
 	const scopeUsageCountByPath =
 		opts.deleteOriginal && opts.deleteOnlyIfNoExternalRefs && !opts.dryRun
-			? await buildUsageCountsInScope(plugin.app, scopeFiles)
+			? await buildUsageCountsInScope(plugin.app, filteredScopeFiles)
 			: new Map<string, number>();
 	const vaultUsageCountByPath =
 		opts.deleteOriginal && opts.deleteOnlyIfNoExternalRefs && !opts.dryRun && opts.scope !== "entire-vault"
@@ -399,7 +493,7 @@ export async function convertAttachments(plugin: ObsidianS3, opts: ConvertAttach
 	// Files to consider deleting after conversion (deferred to end of run).
 	const deleteCandidates = new Map<string, { file: TFile; url: string }>();
 
-	for (const note of scopeFiles) {
+	for (const note of filteredScopeFiles) {
 		report.notesScanned += 1;
 		const content = await vault.read(note);
 		// Only consider refs that look like supported attachment files.

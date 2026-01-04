@@ -23,7 +23,7 @@ export class ConvertAttachmentsReportModal extends Modal {
 		contentEl.createEl("h2", { text: "S3 conversion report" });
 		contentEl.createEl("p", {
 			text:
-				`Scanned ${this.report.notesScanned} notes. ` +
+				`Scanned ${this.report.notesScanned} notes (candidates: ${this.report.notesCandidates}). ` +
 				`Rewrote ${this.report.linksRewritten} links. ` +
 				`Uploads: ${this.report.uploadsSucceeded} succeeded, ${this.report.uploadsSkippedAlreadyExists} skipped (already exists), ${this.report.uploadsFailed} failed.`,
 		});
@@ -54,6 +54,10 @@ export class ConvertAttachmentsModal extends Modal {
 			linkMode: preset?.linkMode ?? "proxy",
 			deleteOriginal: preset?.deleteOriginal ?? false,
 			deleteOnlyIfNoExternalRefs: preset?.deleteOnlyIfNoExternalRefs ?? true,
+			includeFolders: preset?.includeFolders ?? [],
+			excludeFolders: preset?.excludeFolders ?? [],
+			includeTags: preset?.includeTags ?? [],
+			excludeTags: preset?.excludeTags ?? [],
 		};
 	}
 
@@ -82,6 +86,47 @@ export class ConvertAttachmentsModal extends Modal {
 			.addToggle((t) => {
 				t.setValue(this.opts.dryRun);
 				t.onChange((v) => (this.opts.dryRun = v));
+			});
+
+		contentEl.createEl("h3", { text: "Filters (optional)" });
+		contentEl.createEl("p", {
+			text: "Folders are vault-relative paths (e.g. 'Wiki', 'Private/Archive'). Tags can be written as 'tag' or '#tag'.",
+		});
+
+		new Setting(contentEl)
+			.setName("Include folders")
+			.setDesc("Only scan notes under these folders (one per line). Leave empty to include all.")
+			.addTextArea((t) => {
+				t.inputEl.style.width = "100%";
+				t.setValue(this.opts.includeFolders.join("\n"));
+				t.onChange((v) => (this.opts.includeFolders = v.split("\n").map((s) => s.trim()).filter(Boolean)));
+			});
+
+		new Setting(contentEl)
+			.setName("Exclude folders")
+			.setDesc("Never scan notes under these folders (one per line).")
+			.addTextArea((t) => {
+				t.inputEl.style.width = "100%";
+				t.setValue(this.opts.excludeFolders.join("\n"));
+				t.onChange((v) => (this.opts.excludeFolders = v.split("\n").map((s) => s.trim()).filter(Boolean)));
+			});
+
+		new Setting(contentEl)
+			.setName("Include tags")
+			.setDesc("Only scan notes that have at least one of these tags (space or newline separated).")
+			.addTextArea((t) => {
+				t.inputEl.style.width = "100%";
+				t.setValue(this.opts.includeTags.join(" "));
+				t.onChange((v) => (this.opts.includeTags = v.split(/\s+/).map((s) => s.trim()).filter(Boolean)));
+			});
+
+		new Setting(contentEl)
+			.setName("Exclude tags")
+			.setDesc("Never scan notes that have any of these tags (space or newline separated).")
+			.addTextArea((t) => {
+				t.inputEl.style.width = "100%";
+				t.setValue(this.opts.excludeTags.join(" "));
+				t.onChange((v) => (this.opts.excludeTags = v.split(/\s+/).map((s) => s.trim()).filter(Boolean)));
 			});
 
 		new Setting(contentEl)
