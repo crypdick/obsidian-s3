@@ -113,13 +113,21 @@ export class ConvertAttachmentsModal extends Modal {
 				b.setDisabled(true);
 				try {
 					const report = await convertAttachments(this.plugin, this.opts);
+					// Always log the report so users can inspect/keep a record.
+					console.log("[s3-attachments-storage] convertAttachments report:", report);
+					if (report.previewLines?.length) {
+						console.log("[s3-attachments-storage] convertAttachments preview (first 200):\n" + report.previewLines.slice(0, 200).join("\n"));
+					}
+					if (report.errors?.length) {
+						console.warn("[s3-attachments-storage] convertAttachments errors:\n" + report.errors.join("\n"));
+					}
 					this.close();
 					new ConvertAttachmentsReportModal(this.app, report).open();
 				} finally {
 					b.setDisabled(false);
 				}
 			});
-		}).setName(`Run (${scopeLabel(this.opts.scope)})`);
+		}).setName("Run");
 	}
 }
 
