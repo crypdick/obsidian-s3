@@ -14,6 +14,62 @@ An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media at
 ## Manually installing the plugin
 - Copy over `main.js`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
 
+## IAM permissions
+
+This plugin needs both bucket-level and object-level permissions. The following policy grants both:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BucketLevel",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::your-bucket-name"
+    },
+    {
+      "Sid": "ObjectLevel",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
+}
+```
+
+### Optional: make uploaded objects publicly readable
+
+If you want attachments to be directly accessible via `https://<bucket>.s3.<region>.amazonaws.com/<prefix>/<key>`, you must also configure **bucket policy / Block Public Access** accordingly.
+
+Example bucket policy:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadPrefix",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/your-prefix/*"
+    }
+  ]
+}
+```
+
+Notes:
+- Keep **Block Public Access** enabled unless you explicitly want public objects.
+- If you keep the bucket private, the plugin can still fetch objects using credentials via its local proxy URLs (e.g. `http://localhost:4998/...`).
+
 ## Feature list
 Supported files (limited by files allowed to be linked by Obsidian): 
 - images (.ico, .png, .jpg, .gif).
