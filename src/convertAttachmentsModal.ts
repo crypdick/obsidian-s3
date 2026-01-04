@@ -55,11 +55,11 @@ export class ConvertAttachmentsModal extends Modal {
 			deleteOriginal: preset?.deleteOriginal ?? false,
 			deleteOnlyIfNoExternalRefs: preset?.deleteOnlyIfNoExternalRefs ?? true,
 			includeFolders: preset?.includeFolders ?? [],
-			// Sensible defaults: avoid scanning Obsidian internals and common utility/log areas.
-			excludeFolders: preset?.excludeFolders ?? [".obsidian", "Utility/Logs"],
+			// Example folders to exclude.
+			excludeFolders: preset?.excludeFolders ?? ["Utility/Logs"],
 			includeTags: preset?.includeTags ?? [],
-			// Common convention: allow users to tag notes they never want scanned.
-			excludeTags: preset?.excludeTags ?? ["#ignore"],
+			// Allow users to tag notes they never want scanned.
+			excludeTags: preset?.excludeTags ?? ["#ignore", "#private"],
 		};
 	}
 
