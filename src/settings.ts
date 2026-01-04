@@ -178,9 +178,9 @@ export class SettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Endpoint')
-			.setDesc('Your S3 API Endpoint')
+			.setDesc('Your S3 API Endpoint (leave blank if you only use Public URL link mode)')
 			.addText(text => text
-				.setPlaceholder('gateway.storjshare.io')
+				.setPlaceholder('https://s3.<your-region>.amazonaws.com')
 				.setValue(this.plugin.getActive().endPoint)
 				.onChange(async (value) => {
 					this.plugin.getActive().endPoint = value.trim();
@@ -231,7 +231,7 @@ export class SettingsTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Public Base URL (optional)')
-			.setDesc('If set and Link mode = Public, links will be written as: <base>/<folder>/<file>')
+			.setDesc('If set and Link mode = Public, links will point to the public S3 URL instead of the localhost URL: <base>/<folder>/<file>. Requires your objects to be publicly readable (bucket policy + Block Public Access settings).')
 			.addText(text => text
 				.setPlaceholder('https://your-bucket-name.s3.us-east-1.amazonaws.com')
 				.setValue(this.plugin.getActive().publicBaseUrl ?? '')

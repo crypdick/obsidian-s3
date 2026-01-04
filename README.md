@@ -14,6 +14,15 @@ An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media at
 ## Manually installing the plugin
 - Copy over `main.js`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
 
+## Settings (AWS example)
+
+- **Endpoint**: For AWS S3 you can use `https://s3.<your-region>.amazonaws.com` (replace `<your-region>`, e.g. `us-east-1`). The plugin extracts the hostname. Other S3-compatible providers will have their own endpoint.
+- **Folder Name**: Prefix inside the bucket (e.g. `files`).
+- **Link mode**:
+  - **Local proxy**: writes `http://localhost:4998/<folder>/<file>?client=...&bucket=...` (works with private buckets).
+  - **Public URL**: links will point to the public S3 URL instead of the localhost URL: `https://<public-base>/<folder>/<file>` (requires your bucket/objects to be publicly readable).
+- **Public Base URL** (when Link mode = Public): for AWS, typically `https://<bucket>.s3.<region>.amazonaws.com`.
+
 ## IAM permissions
 
 This plugin needs both bucket-level and object-level permissions. The following policy grants both:
