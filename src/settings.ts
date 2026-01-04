@@ -77,7 +77,7 @@ export const DEFAULT_CLIENT: S3ClientSettings = {
 	accessKey: "",
 	secretKey: "",
 	endPoint: "",
-	folderName: "obsidian",
+	folderName: "files",
 	bucketName: "",
 	publicBaseUrl: "",
 	id: "default"
@@ -288,7 +288,7 @@ export class SettingsTab extends PluginSettingTab {
 							accessKey: '',
 							secretKey: '',
 							endPoint: '',
-							folderName: 'obsidian',
+							folderName: 'files',
 							bucketName: '',
 							id: 'name-me',
 						});
