@@ -9,17 +9,15 @@ This repository is a **fork** of [`ttax00/obsidian-s3`](https://github.com/ttax0
 
 This fork includes significant additions and behavior changes, including:
 - Public URL link mode (embed `https://...` links instead of `http://localhost:...`)
-- Optional local proxy server (and clearer UI warnings for localhost links)
+- Optional local proxy server for private S3 buckets
 - Safer “clear unused” behavior across multiple clients
 - A conversion tool to upload existing local attachments to S3 and rewrite links.
 
 ![](assets/welcome.gif)
-## Getting started
-- Clone this repo.
-- `npm i` to install dependencies
-- `npm run build` to compile to `main.js`
+
+
 ## Manually installing the plugin
-- Copy over `main.js`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/s3-attachments/`.
+- Copy over `main.js` and `manifest.json` to your vault `VaultFolder/.obsidian/plugins/s3-attachments/`.
 
 ## Commands
 
@@ -111,6 +109,11 @@ Supported files (limited by files allowed to be linked by Obsidian). By default,
 - Documents/archives (as links): `.pdf`, `.zip`, `.doc`
 
 You can customize this list in the plugin settings under **Allowed MIME Types**.
+
+## Development
+- Clone this repo.
+- `npm i` (or `pnpm i`) to install dependencies.
+- `npm run build` (or `pnpm build`) to generate `main.js`.
 
 
 ## Many thanks
