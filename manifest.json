@@ -1,10 +1,10 @@
 {
-	"id": "s3-attachments-storage",
-	"name": "S3 attachments storage",
-	"version": "0.1.2",
+	"id": "s3-attachments",
+	"name": "S3 Attachments",
+	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "An Obsidian plugin for storage and retrieval of media attachments on S3 compatible services.",
-	"author": "TechTheAwesome",
-	"authorUrl": "https://github.com/TechTheAwesome",
+	"description": "Stores attachments on S3 and embeds S3 URLs. Maintained fork of S3 Attachments Storage.",
+	"author": "Ricardo Decal",
+	"authorUrl": "https://github.com/crypdick",
 	"isDesktopOnly": false
 }

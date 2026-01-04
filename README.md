@@ -1,10 +1,17 @@
-# S3 attachments storage
+# S3 Attachments
 
-![GitHub](https://img.shields.io/github/license/TechTheAwesome/obsidian-s3?style=for-the-badge)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/TechTheAwesome/obsidian-s3/ci.yml?style=for-the-badge)
-[![wakatime](https://wakatime.com/badge/user/4312729e-bc28-4bc0-9074-161a64a7ad20/project/83a03e69-c8e0-49a9-ac01-a80c5ef7c96f.svg?style=for-the-badge)](https://wakatime.com/badge/user/4312729e-bc28-4bc0-9074-161a64a7ad20/project/83a03e69-c8e0-49a9-ac01-a80c5ef7c96f)
 
-An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media attachments on S3 compatible services. 
+An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media attachments on S3 compatible services.
+
+When you copy-paste an image, video, audio, or document into your note, this plugin will upload it to your S3 bucket and rewrite the link to the uploaded file. It also supports uploading existing attachments to S3 and rewriting the links in your notes.
+
+This repository is a **fork** of [`ttax00/obsidian-s3`](https://github.com/ttax00/obsidian-s3). Huge thanks to the original author(s) for the foundation.
+
+This fork includes significant additions and behavior changes, including:
+- Public URL link mode (embed `https://...` links instead of `http://localhost:...`)
+- Optional local proxy server (and clearer UI warnings for localhost links)
+- Safer “clear unused” behavior across multiple clients
+- A conversion tool to upload existing local attachments to S3 and rewrite links.
 
 ![](assets/welcome.gif)
 ## Getting started
@@ -12,7 +19,23 @@ An [Obsidian](https://obsidian.md/) plugin for storage and retrieval of media at
 - `npm i` to install dependencies
 - `npm run build` to compile to `main.js`
 ## Manually installing the plugin
-- Copy over `main.js`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+- Copy over `main.js`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/s3-attachments/`.
+
+## Commands
+
+- **Upload existing attachments to S3 and rewrite links…**
+  - Opens a modal where you can choose **scope** (current note / current folder / entire vault), **dry-run**, whether to create `.bak` copies, and link mode (**Proxy** vs **Public**).
+- **Convert attachments in current note**
+- **Convert attachments in current folder**
+- **Convert attachments in entire vault**
+- **Clear unused s3 objects**
+- **Get usage statistics**
+
+### Conversion workflow (recommended)
+
+- Run **dry-run** first and review the report preview.
+- If it looks good, run again with dry-run off.
+- If enabled, each modified note will get a side-by-side **`.bak`** copy.
 
 ## Settings (AWS example)
 
@@ -88,31 +111,11 @@ Supported files (limited by files allowed to be linked by Obsidian). By default,
 - Documents/archives (as links): `.pdf`, `.zip`, `.doc`
 
 You can customize this list in the plugin settings under **Allowed MIME Types**.
-### Upload
-- [x] Upload on paste.
-- [x] Upload on drag-n-drop.
-- [ ] Upload on adding attachments.
 
-### Retrieval
-- [x] Generate links for images.
-- [x] Generate links for videos.
-- [x] Generate links for audio.
-- [x] Returning download links for un-supported resource? (pdf, txt, ...).
-### Helpers/Misc
-- [x] Command: delete un-used resources.
-- [x] Command: Show bucket size
-- [ ] Rename links on port/foldername changes.
-
-### Unplanned
-- [ ] Command: upload existing compatible attachments.
-- [ ] Parallel uploads. 
-- [ ] Retry counts and delays.
-- [ ] Upload static html sites.
-- [ ] Generate links for static html.
-- [ ] Resource local caching (may increase incompatibility with mobile).
 
 ## Many thanks
 Inspiration taken from:
+- [ttax00/obsidian-s3](https://github.com/ttax00/obsidian-s3)
 - [obsidian-paste-png-to-jpeg](https://github.com/musug/obsidian-paste-png-to-jpeg)
 - [Obsidian Imgur Plugin](https://github.com/gavvvr/obsidian-imgur-plugin)
 - [Obsidian Static File Server](https://github.com/elias-sundqvist/obsidian-static-file-server)
