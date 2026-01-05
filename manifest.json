@@ -1,7 +1,7 @@
 {
 	"id": "s3-attachments",
 	"name": "S3 Attachments",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"minAppVersion": "0.15.0",
 	"description": "Stores attachments on S3 and embeds S3 URLs. Maintained fork of S3 Attachments Storage.",
 	"author": "Ricardo Decal",

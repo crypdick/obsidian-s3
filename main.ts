@@ -202,6 +202,8 @@ export default class ObsidianS3 extends Plugin {
 
 	async loadSettings() {
 		settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as IObsidianSetting);
+		const { setMime } = await import('src/settings');
+		setMime(settings.rawMIME);
 	}
 
 	async saveSettings() {
